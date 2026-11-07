@@ -1,6 +1,7 @@
 # Quail Coop Design
 
-An interactive 3D concept for a four-quail garden habitat. The model supports
+An interactive 3D concept for a four-quail garden habitat. The outdoor design
+uses the one-level 4 ft × 2 ft porch-coop body with a low supported steel roof. The model supports
 touch or mouse rotation, pinch or wheel zoom, preset camera views, part
 identification, opening doors, a scale figure, and individual construction
 layers. The page also includes selectable design options, live cost and weight

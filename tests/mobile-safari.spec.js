@@ -13,7 +13,8 @@ test('renders and remains interactive in an iPhone-sized WebKit viewport', async
   await page.goto(process.env.SITE_URL || 'http://127.0.0.1:4173/');
   const canvas = page.locator('canvas');
   await expect(canvas).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Four-Quail Garden Habitat' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Four-Quail Outdoor Coop' })).toBeVisible();
+  await expect(page.getByText(/48 ½″ wide × 24 ½″ deep/)).toBeVisible();
   await page.waitForTimeout(500);
 
   const before = await canvas.screenshot();
@@ -41,9 +42,9 @@ test('renders and remains interactive in an iPhone-sized WebKit viewport', async
   const zoomed = await canvas.screenshot();
   expect(zoomed.equals(front)).toBe(false);
 
-  await page.getByRole('button', { name: 'Floor tray', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Floor tray', exact: true })).toHaveAttribute('aria-pressed', 'false');
-  await page.getByRole('button', { name: 'Floor tray', exact: true }).click();
+  await page.getByRole('button', { name: 'Floor', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Floor', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: 'Floor', exact: true }).click();
 
   await page.getByRole('tab', { name: 'Build steps' }).click();
   await page.getByRole('button', { name: 'Show in 3D' }).first().click();
@@ -54,8 +55,8 @@ test('renders and remains interactive in an iPhone-sized WebKit viewport', async
 
   await page.getByRole('tab', { name: /Porch coop/ }).click();
   await expect(page.getByRole('heading', { name: 'Four-Quail Porch Coop' })).toBeVisible();
-  await page.getByRole('tab', { name: /Outdoor habitat/ }).click();
-  await expect(page.getByRole('heading', { name: 'Four-Quail Garden Habitat' })).toBeVisible();
+  await page.getByRole('tab', { name: /Outdoor coop/ }).click();
+  await expect(page.getByRole('heading', { name: 'Four-Quail Outdoor Coop' })).toBeVisible();
 
   const fitsViewport = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
   expect(fitsViewport).toBe(true);
