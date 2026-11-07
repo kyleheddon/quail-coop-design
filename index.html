@@ -27,7 +27,7 @@ function box(parent,w,h,d,x,y,z,material){let m=new THREE.Mesh(new THREE.BoxGeom
 function line(parent,ax,ay,az,bx,by,bz,r,material){let a=new THREE.Vector3(ax,ay,az),b=new THREE.Vector3(bx,by,bz),m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,a.distanceTo(b),7),material);m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());parent.add(m);return m}
 function panel(parent,x,y,z,w,h,angle=0,material=meshmat){let p=new THREE.Mesh(new THREE.PlaneGeometry(w,h),material);p.position.set(x,y,z);p.rotation.y=angle;parent.add(p);return p}
 // Exterior dimensions: 4 x 4 ft. X is left/right; Z toward front is +2.
-const B=2,F=2,yFloor=1.33,yFrameTop=2.85;
+const B=2,F=2,yFloor=1.33,yFrameTop=2.85,floorTop=yFloor+.06;
 const ground=box(scene,13,.05,13,0,-.1,0,mat('#2b3934'));ground.receiveShadow=true;
 let grid=new THREE.GridHelper(12,24,'#45524c','#3a4741');grid.position.y=-.06;scene.add(grid);
 // Four legs plus framing, solid accessible removable floor.
@@ -45,26 +45,35 @@ panel(meshG,0,2.04,-1.99,3.75,1.39);panel(meshG,1.99,2.04,0,3.76,1.39,Math.PI/2)
 // Wind-blocking hideout occupies back-left quarter, with opening toward center.
 box(wallG,2.02,1.31,.06,-.94,2.09,-1.92,blue);box(wallG,.06,1.31,2.02,-1.92,2.09,-.96,blue);
 box(wallG,1.1,.96,.07,-1.43,1.99,.04,blue);box(wallG,.07,.96,.78,-.04,1.99,-1.55,blue);
-box(wallG,.9,.08,1.95,-.98,2.7,-.97,ivoryD); // narrow overhead partial cover
+// Full hideout canopy, carried by the two solid walls and a framed inner corner.
+box(wallG,1.88,.08,1.88,-.98,2.7,-.97,ivoryD);
+box(wallG,1.88,.08,.08,-.98,2.62,-.04,ivory);box(wallG,.08,.08,1.88,-.04,2.62,-.97,ivory);
+box(wallG,.08,1.19,.08,-.04,1.985,-.04,ivory);
 // A bit of shelter nesting/hide furnishing
-box(wallG,.6,.35,.48,-1.28,1.58,-1.08,mat('#92704d'));
-// Soft ceiling liner under rigid cover, schematic representation.
-const overhead=new THREE.Mesh(new THREE.PlaneGeometry(3.88,3.88),soft);overhead.rotation.x=-Math.PI/2;overhead.position.set(0,2.49,0);linerG.add(overhead);
+box(wallG,.6,.35,.48,-1.28,floorTop+.175,-1.08,mat('#92704d'));
+// Soft ceiling liner captured inside a perimeter attachment frame.
+const linerY=2.47,overhead=new THREE.Mesh(new THREE.PlaneGeometry(3.78,3.78),soft);overhead.rotation.x=-Math.PI/2;overhead.position.set(0,linerY,0);linerG.add(overhead);
+for(const z of [-1.89,1.89])box(linerG,3.78,.06,.08,0,linerY+.02,z,ivoryD);
+for(const x of [-1.89,1.89])box(linerG,.08,.06,3.78,x,linerY+.02,0,ivoryD);
 // Fibrous mesh grid for visual clarity.
-for(let i=-1.8;i<=1.81;i+=.3){line(linerG,i,2.49,-1.89,i,2.49,1.89,.005,mat('#91aaa0',{transparent:true,opacity:.55}));line(linerG,-1.89,2.49,i,1.89,2.49,i,.005,mat('#91aaa0',{transparent:true,opacity:.55}))}
+for(let i=-1.8;i<=1.81;i+=.3){line(linerG,i,linerY+.005,-1.85,i,linerY+.005,1.85,.005,mat('#91aaa0',{transparent:true,opacity:.55}));line(linerG,-1.85,linerY+.005,i,1.85,linerY+.005,i,.005,mat('#91aaa0',{transparent:true,opacity:.55}))}
 // Rain roof pitched back, generous overhang, slight front elevation. 4.8 ft wide.
-const slope=.12;
-let roof=new THREE.Group();roof.rotation.x=-Math.atan(slope);roof.position.set(0,3.1,0);roofG.add(roof);
+const slope=.12,roofTilt=Math.atan(slope),roofBaseY=3.34;
+let roof=new THREE.Group();roof.rotation.x=-roofTilt;roof.position.set(0,roofBaseY,0);roofG.add(roof);
 box(roof,4.72,.075,4.85,0,0,0,roofmat);
 for(let x=-2.25;x<=2.251;x+=.24)box(roof,.042,.075,4.85,x,.063,0,mat('#485058',{metalness:.38,roughness:.55}));
-for(const x of [-1.96,1.96])for(const z of [-1.95,1.95])box(coop,.13,.24,.13,x,2.95,z,ivory);
+// Rafters rotate with the roof; slope-matched risers meet their lower faces.
+for(const x of [-1.96,0,1.96])box(roof,.14,.15,4.1,x,-.115,0,ivoryD);
+for(const z of [-1.95,1.95])box(roof,4.05,.15,.14,0,-.115,z,ivoryD);
+const roofRailBottom=-.19,roofSupportY=z=>roofBaseY+roofRailBottom*Math.cos(roofTilt)+z*Math.sin(roofTilt);
+for(const x of [-1.96,1.96])for(const z of [-1.95,1.95]){const top=roofSupportY(z),h=top-yFrameTop;box(roofG,.14,h,.14,x,yFrameTop+h/2,z,ivory)}
 // Door assemblies pivot at outer edges so toggling "open" actually swings them out.
 function door(hx,left){const g=new THREE.Group();g.position.set(hx,0,2.045);doorG.add(g);let w=1.83,h=1.46,cx=left?w/2:-w/2;box(g,w,.12,.085,cx,1.36,0,ivory);box(g,w,.12,.085,cx,2.77,0,ivory);box(g,.1,h,.085,cx+(left?-w/2:w/2),2.07,0,ivory);box(g,.1,h,.085,cx+(left?w/2:-w/2),2.07,0,ivory);panel(g,cx,2.06,.055,w-.2,h-.2,0,meshmat);let a=left?0:w*.0;line(g,cx-.68,1.4,.09,cx+.68,2.7,.09,.034,ivoryD);box(g,.11,.1,.11,left?w-.08:-w+.08,2.13,.13,black);return g}
 const dLeft=door(-1.95,true),dRight=door(1.95,false);
 // Dust-bathing tray, water and feed systems, natural hiding objects.
-box(coop,1,.12,.84,1.12,1.47,-1.13,ivoryD);box(coop,.89,.03,.73,1.12,1.54,-1.13,sand);
-const water=mat('#b0cddd',{metalness:.1}),red=mat('#a96754');let tube=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.54,18),water);tube.position.set(1.53,1.73,.95);coop.add(tube);box(coop,.6,.11,.25,1.45,1.5,.96,red);
-box(coop,1,.12,.23,.2,1.47,1.35,mat('#aa9b72'));
+box(coop,1,.12,.84,1.12,floorTop+.06,-1.13,ivoryD);box(coop,.89,.03,.73,1.12,floorTop+.135,-1.13,sand);
+const water=mat('#b0cddd',{metalness:.1}),red=mat('#a96754');let tube=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.54,18),water);tube.position.set(1.53,floorTop+.38,.95);coop.add(tube);box(coop,.6,.11,.25,1.45,floorTop+.055,.96,red);
+box(coop,1,.12,.23,.2,floorTop+.06,1.35,mat('#aa9b72'));
 function quail(x,z,tint){const q=new THREE.Group();q.position.set(x,1.51,z);let body=new THREE.Mesh(new THREE.SphereGeometry(.19,16,12),tint);body.scale.set(1.1,.72,1.42);q.add(body);const hd=new THREE.Mesh(new THREE.SphereGeometry(.105,12,8),tint);hd.position.set(0,.065,-.17);q.add(hd);const beak=new THREE.Mesh(new THREE.ConeGeometry(.048,.1,6),sand);beak.rotation.x=-Math.PI/2;beak.position.set(0,.07,-.28);q.add(beak);for(const side of [-1,1]){let e=new THREE.Mesh(new THREE.SphereGeometry(.016,8,6),black);e.position.set(side*.078,.105,-.24);q.add(e)}q.rotation.y=Math.random()*2;birdG.add(q)}
 quail(.5,.1,feather);quail(-.68,.87,feather2);quail(1.16,-.04,feather2);quail(.07,-.76,feather);
 // HTML interactions.
