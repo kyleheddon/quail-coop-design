@@ -525,8 +525,8 @@ function buildOutdoor(cfg, ctx){
   hw(ctx,'Soft bird netting, 4 × 4 ft',0.5,'Ceiling liner');
 
   /* Pitched roof: rafters and slope-matched risers physically meet the frame. */
-  const s=2/12, cosA=1/Math.hypot(1,s), sinA=s*cosA, Dv=D/cosA;
-  const zA=-6, zB=L+6, Lr=(zB-zA)/cosA, plane=z=>45-s*z;
+  const s=4/12, cosA=1/Math.hypot(1,s), sinA=s*cosA, Dv=D/cosA;
+  const zA=-6, zB=L+6, Lr=(zB-zA)/cosA, plane=z=>54-s*z;
   for(const x of [[0,T],[W-T,W]]) for(const z of [[0,T],[L-T,L]]){
     const zc=(z[0]+z[1])/2, beamTop=plane(zc), beamBot=beamTop-T, h=beamBot-yFrameTop;
     B({...fr,name:'Slope-matched roof riser',x,y:[yFrameTop,beamBot],z,bom:lum(h)});
@@ -535,6 +535,13 @@ function buildOutdoor(cfg, ctx){
     const zc=(z[0]+z[1])/2, beamTop=plane(zc);
     B({...fr,name:'Roof rafter bearing beam',x:[0,W],y:[beamTop-T,beamTop],z,bom:lum(W)});
   }
+  /* Close the raised eaves: the steeper shingle-safe roof must not create predator gaps. */
+  const frontEaveBottom=plane(T/2)-T, backEaveBottom=plane(L-T/2)-T;
+  meshPanel(ctx,{name:'Front upper hardware cloth',axis:'z',at:-0.08,u:[0,W],v:[yFrameTop,frontEaveBottom]});
+  meshPanel(ctx,{name:'Back upper hardware cloth',axis:'z',at:L+0.08,u:[0,W],v:[yFrameTop,backEaveBottom]});
+  const eavePoly=[[0,yFrameTop],[L,yFrameTop],[L,backEaveBottom],[0,frontEaveBottom]], eaveH=((frontEaveBottom-yFrameTop)+(backEaveBottom-yFrameTop))/2;
+  P({mat:'mesh',layer:'mesh',name:'Left sloped eave hardware cloth',axis:'x',poly:eavePoly,range:[-.08,0],noEdges:true,bom:{k:'mesh',w:L,h:eaveH}});
+  P({mat:'mesh',layer:'mesh',name:'Right sloped eave hardware cloth',axis:'x',poly:eavePoly,range:[W,W+.08],noEdges:true,bom:{k:'mesh',w:L,h:eaveH}});
   for(const x of [[0,T],[m0,m1],[W-T,W]]) P({...fr,name:'Roof rafter',axis:'x',poly:[[zA,plane(zA)],[zB,plane(zB)],[zB,plane(zB)+Dv],[zA,plane(zA)+Dv]],range:x,bom:lum(Lr)});
   const roofWidth=W+4, R0y=plane(zA)+Dv, SP=(u,v)=>[zA+u*cosA+v*sinA,R0y-u*sinA+v*cosA];
   P({mat:'ply',layer:'roofdeck',name:'Roof deck',axis:'x',poly:[SP(0,0),SP(Lr,0),SP(Lr,.5),SP(0,.5)],range:[-2,W+2],bom:{k:'ply',th:.5,w:roofWidth,h:Lr}});
@@ -593,7 +600,7 @@ function buildOutdoor(cfg, ctx){
     bird(14,17,.2,'birdA');bird(23,27,2.2,'birdB');bird(34,20,4.3,'birdB');bird(11,35,5.2,'birdA');
   }
 
-  ctx.g={W,L,T,D,overall:[W,L],yFloor:yFloorTop,clear:linerY-yFloorTop,linerY,shelter:[shelter,shelter,shelterTop-yFloorTop],door:[dw,doorTop-doorBottom],roofFront:plane(zA)+Dv+.5,roofBack:plane(zB)+Dv+.5,pitch:2,Lr};
+  ctx.g={W,L,T,D,overall:[W,L],yFloor:yFloorTop,clear:linerY-yFloorTop,linerY,shelter:[shelter,shelter,shelterTop-yFloorTop],door:[dw,doorTop-doorBottom],roofFront:plane(zA)+Dv+.5,roofBack:plane(zB)+Dv+.5,pitch:4,Lr};
   return ctx.g;
 }
 
@@ -876,9 +883,9 @@ const MODELS = {
       ['Hideout','The 24″ × 24″ back-left refuge has two solid walls and a solid canopy but stays open toward the run, giving shade and shelter without forcing the birds upstairs.'],
       ['Flighty birds','Quail can flush straight up. A taut soft net or shade-cloth liner sits '+fIn(g.clear)+' above the floor, below the hard roof framing, to reduce head injuries. Keep it taut and eliminate loops that could catch feet or heads.'],
       ['Floor and cleaning','The solid pressure-treated floor tray supports litter and sand. Both front doors open nearly the full width, so the tray can be scraped or lifted once the birds are secured elsewhere. Seal the plywood edges and never leave exposed preservative where birds can peck it.'],
-      ['Air and weather','Three sides and both doors are hardware cloth. The refuge blocks the prevailing wind at one rear corner while the roof overhang keeps most rain off the mesh. Add a removable wind panel on the windward side in severe weather without sealing all ventilation.'],
+      ['Air and weather','Three sides, both doors and every raised-eave opening are hardware cloth. The refuge blocks the prevailing wind at one rear corner while the roof overhang keeps most rain off the mesh. Add a removable wind panel on the windward side in severe weather without sealing all ventilation.'],
       ['Predators','Use ½″ galvanized hardware cloth, not chicken wire. Staple or screw it to every frame member, add locking carabiners to both latches, and close every gap larger than ½″.'],
-      ['Roof choice','Steel is the lightest option. The 2-in-12 concept is suitable only for a metal panel system whose manufacturer explicitly allows that minimum slope; use the shingle option only after increasing the pitch to the shingle manufacturer’s minimum.'],
+      ['Roof choice','Steel is the lightest option. The 4-in-12 slope works with standard 3-tab shingles and is also comfortably above the usual minimum for exposed-fastener corrugated steel; follow the selected manufacturer’s underlayment and fastening instructions.'],
       ['Carrying','As configured the habitat weighs about '+fLb(an.total)+' lb, or about '+fLb(an.total/2)+' lb per person before litter and fixtures. The lightest listed combination is about '+fLb(lightest)+' lb. Remove the roof panels and floor tray before moving if practical.'],
       ['Ground contact','Set all four legs on level pavers so the frame cannot twist and the pressure-treated floor framing stays out of standing water. Anchor the habitat for local wind conditions.'],
       ['Not shown','Roofing screws with neoprene washers, leg bolts, exterior glue, sealer or paint, removable wind panels, ground anchors, litter and the birds’ daily supplies.']],
@@ -887,15 +894,15 @@ const MODELS = {
       ['Build the raised platform','Screw the two 48″ rim joists to three cross joists on 24″ centers. Square the frame, bolt one leg inside each corner and set all four legs on level pavers.'],
       ['Fit the solid floor tray','Seal every plywood edge, then screw or bolt the 48″ × 48″ tray to the platform so it can be removed for deep cleaning.'],
       ['Frame and brace the walls','Build the front, back and side frames flat, including the middle posts. Stand them on the floor platform, join the corners, then install the two back and two side diagonal braces.'],
-      ['Attach the hardware cloth','Wrap the back and both sides with ½″ galvanized hardware cloth. Pull it tight and fasten every 2–3″ at edges and to every post and plate it crosses.'],
+      ['Attach the hardware cloth','Wrap the back and both sides with ½″ galvanized hardware cloth. Pull it tight and fasten every 2–3″ at edges and to every post and plate it crosses; after the roof supports are set, close the front, back and sloped eave openings the same way.'],
       ['Build the refuge','Install the two solid hideout walls, the inner support post, both canopy rails and the 24″ × 24″ canopy. Confirm the canopy bears on framing at every edge.'],
       ['Install the soft liner','Screw the four 1×2 attachment rails around the inside perimeter. Stretch bird netting or shade cloth taut below the roof frame, with no loose loops.'],
-      ['Set the supported roof','Cut the four corner risers to the 2-in-12 slope, install continuous front and back bearing beams, then set three rafters front to back. Screw down the plywood deck and underlayment, then install the selected roofing. Verify the panel maker permits this pitch.'],
+      ['Set the supported roof','Cut the four corner risers to the 4-in-12 slope, install continuous front and back bearing beams, then set three rafters front to back. Screw down the plywood deck and underlayment, then install the selected roofing to its manufacturer’s instructions.'],
       ['Hang doors and add fixtures','Build two braced 2×2 mesh doors, hang each on two T-hinges, add padlockable latches and locking carabiners, then place the feeder, waterer and sand bath.']],
-    cutNotes:[[/^Roof rafter$/,'Both ends cut parallel to the 2-in-12 roof pitch'],[/^Roof rafter bearing beam/,'Full-width beam; every rafter bears on it'],[/^Slope-matched roof riser/,'Cut to fit in place; front and back lengths differ'],
+    cutNotes:[[/^Roof rafter$/,'Both ends cut parallel to the 4-in-12 roof pitch'],[/^Roof rafter bearing beam/,'Full-width beam; every rafter bears on it'],[/^Slope-matched roof riser/,'Cut to fit in place; front and back lengths differ'],
       [/door diagonal/,'Angled ends: mark off the door frame'],[/diagonal brace/,'Angled ends: mark off the wall'],[/^Leg/,'Bolt each leg to both adjoining floor-frame members'],
       [/^Liner attachment rail/,'Ease sharp edges before stretching the soft liner'],[/^Hideout canopy/,'Support every edge on rails or a wall panel']],
-    stepRules:[[/^Floor rim|^Floor joist|^Leg$/,0],[/^Solid removable floor/,1],[/^Wall |^Front wall|^Back wall|^Side wall|diagonal brace/,2],[/hardware cloth/,3],[/^Hideout/,4],[/^Liner|^Soft ceiling/,5],[/roof|Roof|rafter|Rafter|shingle|Shingle|Corrugated/,6],[/./,7]]
+    stepRules:[[/^Floor rim|^Floor joist|^Leg$/,0],[/^Solid removable floor/,1],[/^Wall |^Front wall|^Back wall|^Side wall|diagonal brace/,2],[/upper hardware cloth|sloped eave hardware cloth/,6],[/hardware cloth/,3],[/^Hideout/,4],[/^Liner|^Soft ceiling/,5],[/roof|Roof|rafter|Rafter|shingle|Shingle|Corrugated/,6],[/./,7]]
   }
 };
 
