@@ -4,6 +4,7 @@ test.use({
   ...devices['iPhone 13'],
   browserName: 'webkit',
 });
+test.setTimeout(60_000);
 
 test('renders and remains interactive in an iPhone-sized WebKit viewport', async ({ page }) => {
   const errors = [];
@@ -27,18 +28,34 @@ test('renders and remains interactive in an iPhone-sized WebKit viewport', async
   expect(rotated.equals(before)).toBe(false);
 
   await page.getByRole('button', { name: 'Front', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Front', exact: true })).toHaveClass(/active/);
+  await expect(page.getByRole('button', { name: 'Front', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.waitForTimeout(500);
   const front = await canvas.screenshot();
   expect(front.equals(rotated)).toBe(false);
 
-  await page.getByRole('button', { name: 'Open front doors' }).click();
-  await expect(page.getByRole('button', { name: 'Close front doors' })).toBeVisible();
+  await page.getByLabel('Open doors').check({ force: true });
+  await expect(page.getByLabel('Open doors')).toBeChecked();
 
   await canvas.dispatchEvent('wheel', { deltaY: -300 });
   await page.waitForTimeout(500);
   const zoomed = await canvas.screenshot();
   expect(zoomed.equals(front)).toBe(false);
+
+  await page.getByRole('button', { name: 'Floor tray', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Floor tray', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: 'Floor tray', exact: true }).click();
+
+  await page.getByRole('tab', { name: 'Build steps' }).click();
+  await page.getByRole('button', { name: 'Show in 3D' }).first().click();
+  await expect(page.getByText(/Step 1 of 8/)).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Cut list' }).click();
+  await expect(page.getByRole('columnheader', { name: 'Part' })).toBeVisible();
+
+  await page.getByRole('tab', { name: /Porch coop/ }).click();
+  await expect(page.getByRole('heading', { name: 'Four-Quail Porch Coop' })).toBeVisible();
+  await page.getByRole('tab', { name: /Outdoor habitat/ }).click();
+  await expect(page.getByRole('heading', { name: 'Four-Quail Garden Habitat' })).toBeVisible();
 
   const fitsViewport = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
   expect(fitsViewport).toBe(true);

@@ -1,8 +1,12 @@
 # Quail Coop Design
 
 An interactive 3D concept for a four-quail garden habitat. The model supports
-touch or mouse rotation, pinch or wheel zoom, preset camera views, and toggles
-for the roof, hideout, mesh, birds, doors, and ceiling liner.
+touch or mouse rotation, pinch or wheel zoom, preset camera views, part
+identification, opening doors, a scale figure, and individual construction
+layers. The page also includes selectable design options, live cost and weight
+estimates, editable material prices, a copyable shopping list, sequenced 3D
+build steps, cut lists, and construction notes for both the outdoor and porch
+designs.
 
 The site is a self-contained static page and is deployed automatically to
 GitHub Pages whenever `main` is updated.
