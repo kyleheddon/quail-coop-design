@@ -45,6 +45,10 @@ test('renders and remains interactive in an iPhone-sized WebKit viewport', async
   await page.getByRole('button', { name: 'Floor', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Floor', exact: true })).toHaveAttribute('aria-pressed', 'false');
   await page.getByRole('button', { name: 'Floor', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Protected edges', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Protected edges', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Protected edges', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: 'Protected edges', exact: true }).click();
 
   await page.getByRole('tab', { name: 'Build steps' }).click();
   await page.getByRole('button', { name: 'Show in 3D' }).first().click();
@@ -52,6 +56,10 @@ test('renders and remains interactive in an iPhone-sized WebKit viewport', async
 
   await page.getByRole('tab', { name: 'Cut list' }).click();
   await expect(page.getByRole('columnheader', { name: 'Part' })).toBeVisible();
+  await expect(page.getByText('Front child-protection fascia (1×4)')).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Materials' }).click();
+  await expect(page.getByText('Hemmed metal roof-edge trim, 18 ft')).toBeVisible();
 
   await page.getByRole('tab', { name: /Porch coop/ }).click();
   await expect(page.getByRole('heading', { name: 'Four-Quail Porch Coop' })).toBeVisible();

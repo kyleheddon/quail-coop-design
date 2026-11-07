@@ -329,7 +329,7 @@ const MAT = {
   siding: std('#74839a',.8), trim: std('#ecebe4',.75), doorPaint: std('#6a3a33',.72),
   alum: new THREE.MeshStandardMaterial({color:lin('#c6ccd2'), metalness:.7, roughness:.34, side:THREE.DoubleSide}),
   shingle: new THREE.MeshStandardMaterial({map:shingleTex(), roughness:.95, side:THREE.DoubleSide}),
-  shingleEdge: std('#3a3e43',.9), steel: std('#41474d',.4,.8), carabiner: std('#e2552b',.35,.35),
+  shingleEdge: std('#3a3e43',.9), steel: std('#41474d',.4,.8), rubber: std('#24292d',.92), carabiner: std('#e2552b',.35,.35),
   fixture: std('#a87555',.75), sand: std('#d6bf8e',.95), birdA: std('#9e896b',.95), birdB: std('#c8b79b',.95), beak: std('#d6bf8e',.85),
   soft: new THREE.MeshStandardMaterial({color:lin('#9ab9a3'),transparent:true,opacity:.28,side:THREE.DoubleSide,depthWrite:false,roughness:1}),
   mesh: new THREE.MeshStandardMaterial({map:meshTex(), transparent:true, side:THREE.DoubleSide, depthWrite:false, metalness:.4, roughness:.5})
@@ -354,7 +354,7 @@ function addMesh(ctx, geo, o){
   let pk=null;
   if(o.layer==='sheathing' && /^ply/.test(o.mat)) pk='siding';
   else if(o.mat==='door') pk = (o.bom && o.bom.k==='ply') ? 'doorPaint' : 'trim';
-  else if(/^wood/.test(o.mat) && (o.layer==='framing' || o.layer==='doors' || o.layer==='sheathing')) pk='trim';
+  else if(/^wood/.test(o.mat) && (o.layer==='framing' || o.layer==='doors' || o.layer==='sheathing' || o.layer==='roofedge')) pk='trim';
   if(pk && ctx.paintAll) pk=ctx.paintAll;
   const m = new THREE.Mesh(geo, MAT[o.mat]);
   m.castShadow = o.mat!=='mesh'; m.receiveShadow = true;
@@ -756,6 +756,31 @@ function buildOutdoor(cfg, ctx){
     P({mat:'wood',layer:'framing',name:'Roof purlin (1×4 flat)',axis:'x',poly:[[a,topA],[b,topB],[b,topB+.75],[a,topA+.75]],range:[-2,W+2],bom:lum(W+4,'1x4')});
   }
 
+  /* A projecting 1x4 fascia is the primary guard between a child and the sheet edge.
+     Hemmed metal trim covers the perimeter; rounded EPDM caps protect all four corners. */
+  const panelFront=zA-1/cosA,panelBack=zB+1/cosA,roofTop=z=>plane(z)+Dv+.75;
+  const edgeDesc='1×4 fascia projects beyond the steel edge; hemmed trim and a rounded cap remove the exposed corner';
+  B({mat:'wood',layer:'roofedge',name:'Front child-protection fascia (1×4)',desc:edgeDesc,x:[-2.75,W+2.75],y:[roofTop(panelFront)-3.5,roofTop(panelFront)],z:[panelFront-.3,panelFront+.45],bom:lum(W+5.5,'1x4')});
+  B({mat:'wood',layer:'roofedge',name:'Back child-protection fascia (1×4)',desc:edgeDesc,x:[-2.75,W+2.75],y:[roofTop(panelBack)-3.5,roofTop(panelBack)],z:[panelBack-.45,panelBack+.3],bom:lum(W+5.5,'1x4')});
+  const fasciaPoly=[[panelFront,roofTop(panelFront)],[panelBack,roofTop(panelBack)],[panelBack,roofTop(panelBack)-3.5],[panelFront,roofTop(panelFront)-3.5]];
+  P({mat:'wood',layer:'roofedge',name:'Left child-protection fascia (1×4)',desc:edgeDesc,axis:'x',poly:fasciaPoly,range:[-2.75,-2],bom:lum((panelBack-panelFront)/cosA,'1x4')});
+  P({mat:'wood',layer:'roofedge',name:'Right child-protection fascia (1×4)',desc:edgeDesc,axis:'x',poly:fasciaPoly,range:[W+2,W+2.75],bom:lum((panelBack-panelFront)/cosA,'1x4')});
+
+  /* Thin dark bands represent the hemmed edge cap, not a raw cut sheet-metal edge. */
+  B({mat:'steel',layer:'roofedge',name:'Hemmed front roof-edge trim',desc:'Folded metal edge cap over the recessed panel edge',noEdges:true,x:[-2.65,W+2.65],y:[roofTop(panelFront)-.2,roofTop(panelFront)+.2],z:[panelFront-.36,panelFront-.06]});
+  B({mat:'steel',layer:'roofedge',name:'Hemmed back roof-edge trim',desc:'Folded metal edge cap over the recessed panel edge',noEdges:true,x:[-2.65,W+2.65],y:[roofTop(panelBack)-.2,roofTop(panelBack)+.2],z:[panelBack+.06,panelBack+.36]});
+  const trimPoly=[[panelFront,roofTop(panelFront)+.2],[panelBack,roofTop(panelBack)+.2],[panelBack,roofTop(panelBack)-.2],[panelFront,roofTop(panelFront)-.2]];
+  P({mat:'steel',layer:'roofedge',name:'Hemmed left roof-edge trim',desc:'Folded metal edge cap over the recessed panel edge',noEdges:true,axis:'x',poly:trimPoly,range:[-2.82,-2.52]});
+  P({mat:'steel',layer:'roofedge',name:'Hemmed right roof-edge trim',desc:'Folded metal edge cap over the recessed panel edge',noEdges:true,axis:'x',poly:trimPoly,range:[W+2.52,W+2.82]});
+  hw(ctx,'Hemmed metal roof-edge trim, 18 ft',1.5,'All four roof edges');
+  for(const x of [-2.72,W+2.72]) for(const z of [panelFront,panelBack]){
+    hw(ctx,'Rounded EPDM roof corner cap',.06,'Roof corner');
+    if(!ctx.dry){
+      const cap=new THREE.SphereGeometry(.62,16,10); cap.scale(1,.7,1); cap.translate(x,roofTop(z),z);
+      addMesh(ctx,cap,{mat:'rubber',layer:'roofedge',name:'Rounded EPDM roof corner cap',desc:'UV-resistant replaceable cap over the hemmed corner',noEdges:true});
+    }
+  }
+
   const Wr=W+5,Lp=Lr+2,amp=.3,n=Math.ceil((Wr-2)/24);
   ctx.bom.push({k:'alum',name:'Corrugated galvanized steel panel',panels:n,len:Lp,area:Wr*Lp/144,mod:ctx.mod});
   ctx.bom.push({k:'closure',name:'Foam closure strip',qty:2*n,mod:ctx.mod});
@@ -768,7 +793,7 @@ function buildOutdoor(cfg, ctx){
     geo.applyMatrix4(new THREE.Matrix4().makeBasis(e1,e2,e3).setPosition(W/2,cy,cz));
     addMesh(ctx,geo,{mat:'alum',layer:'roofing',name:'Low corrugated steel roof',desc:'3-in-12 steel roof on three purlins and three supported rafters',noEdges:true});
   }
-  Object.assign(g,{roofPitch:3,roofFront:plane(zA)+Dv+1,roofBack:plane(zB)+Dv+1,roofWidth:Wr,roofDepth:Lp,overallHeight:plane(zA)+Dv+1});
+  Object.assign(g,{roofPitch:3,roofFront:plane(zA)+Dv+1,roofBack:plane(zB)+Dv+1,roofWidth:Wr,roofDepth:Lp,overallHeight:plane(zA)+Dv+1,roofGuard:'1×4 fascia + hemmed trim + rounded caps'});
   ctx.g=g; return g;
 }
 
@@ -899,20 +924,20 @@ const MODELS = {
     lede:'The one-level porch coop copied at the same 4′ × 2′ size, with its split run and sleeping box, plus a low supported 3-in-12 corrugated-steel roof for outdoor weather.',
     build:buildOutdoor, center:27, radius:44, fasten:3, paintAll:'trim',
     state:{},
-    layers:[['framing','Framing'],['floors','Floor'],['sheathing','Sleeping box'],['mesh','Hardware cloth'],['roofing','Low roof'],['doors','Doors'],['hardware','Latches & hinges']],
+    layers:[['framing','Framing'],['floors','Floor'],['sheathing','Sleeping box'],['mesh','Hardware cloth'],['roofing','Low roof'],['roofedge','Protected edges'],['doors','Doors'],['hardware','Latches & hinges']],
     options:[], compare:null,
     have:[
       ['#8 deck screws, 3″','Rails, joists, roof risers, bearing beams and rafters. Predrill so the 2×2 does not split.'],
       ['Deck screws, 1⅝″','Floor and sleeping-box plywood, door-frame corners and roof purlins.'],
       ['Fence staples','Hardware cloth every 2–3″ along each edge and every rail it crosses.'],
-      ['Exterior roofing screws with neoprene washers','Corrugated steel to every purlin; place screws as the panel manufacturer specifies.']],
-    uses:{'2x2':'Posts, rails, floor joist, braces and roof frame','1x2':'Floor ledgers, run door and box-door stiffeners','1x4':'Three roof purlins'},
+      ['Exterior roofing screws with neoprene washers','Corrugated steel to every purlin; use the manufacturer-approved length and verify that no point protrudes into any reachable area below the eaves.']],
+    uses:{'2x2':'Posts, rails, floor joist, braces and roof frame','1x2':'Floor ledgers, run door and box-door stiffeners','1x4':'Three roof purlins and four perimeter fascia boards'},
     cfgLabel:()=> 'one level, ½″ plywood, low steel roof',
     split:an=>'The coop is about <b>'+fLb(an.total)+' lb</b> empty. Two people can carry it by the side handles; remove the steel roof panels first if you need the lightest lift.',
     specs:g=>[
       ['Overall body',fIn(g.W+g.tb)+' wide × '+fIn(g.L+g.tb)+' deep'],['Overall height',fIn(g.overallHeight)],
       ['Floor height',fIn(g.yLF)+' off ground'],['Clear height',fIn(g.lowerClear)],
-      ['Roof',g.roofPitch+' in 12 corrugated steel'],['Roof size',fIn(g.roofWidth)+' × '+fIn(g.roofDepth)],
+      ['Roof',g.roofPitch+' in 12 corrugated steel'],['Roof size',fIn(g.roofWidth)+' × '+fIn(g.roofDepth)],['Roof-edge protection',g.roofGuard],
       ['Front roof edge',fIn(g.roofFront)+' high'],['Back roof edge',fIn(g.roofBack)+' high'],
       ['Doors',fIn(g.udw)+' × '+fIn(g.udh)+' each'],['Sleeping box inside',fIn(g.box[0])+' × '+fIn(g.box[1])+' × '+fIn(g.box[2])+' tall'],
       ['Floor space',(g.runArea+g.boxArea).toFixed(1)+' sq ft'],['Per bird',((g.runArea+g.boxArea)/4).toFixed(1)+' sq ft']],
@@ -920,11 +945,12 @@ const MODELS = {
       ['Copied footprint','The cage body is the one-level porch model unchanged: 48″ wide, 24″ deep, one floor, a mesh run on the left and an enclosed sleeping box on the right. The only addition is the roof frame and steel cover.'],
       ['Accessibility','At only '+fIn(g.L+g.tb)+' deep, every part of the floor is within easy reach through one of the two front doors; no lifting roof is needed.'],
       ['Roof load path','Three short rafters span front to back and bear on full-width front and back beams. Four risers land those beams on the existing top frame. Three 1×4 purlins support the corrugated panels, so no roof material floats.'],
+      ['Protected roof edges','A painted 1×4 fascia projects beyond every steel edge as the primary contact barrier. Hemmed metal trim covers the cut perimeter and rounded, UV-resistant EPDM caps cover all four corners. Use roofing screws short enough that no point is exposed below the eaves. Sand the wood corners round and inspect the trim and caps at least monthly and after storms; replace anything loose, split or brittle. This reduces sharp-edge hazards but does not replace adult supervision.'],
       ['Weather','The solid plywood top remains under the low steel roof. It blocks drafts and catches condensation; the ventilated gap above it lets the underside dry. Face the mesh run end away from prevailing wind and add a removable wind panel during severe weather.'],
       ['Predators','Use ½″ galvanized hardware cloth, not chicken wire. Both front doors need padlockable latches and locking carabiners. Close every gap larger than ½″ and anchor the coop against wind or tipping.'],
       ['Flighty birds','The clear interior height is '+fIn(g.lowerClear)+'. Stretch taut soft bird netting or shade cloth a few inches below the plywood ceiling, with no loose loops, to reduce head injuries.'],
       ['Ground contact','Set the four legs on level pavers so the frame stays square and dry. Seal or paint all exterior plywood edges.'],
-      ['Not shown','Roofing screws, foam closures, exterior glue, paint or sealer, anchors, removable wind panel, soft liner, feeders, waterer and bedding.']],
+      ['Not shown','Roofing screws, exterior glue, paint or sealer, anchors, removable wind panel, soft liner, feeders, waterer and bedding.']],
     lightest:null,
     steps:[
       ['Build the front and back frames','Copy the one-level porch ladder frames exactly: 45½″ corner posts and 45″ rails at 3″, 18″ and 44″. Add the front and back middle posts for the two door bays and divider.'],
@@ -933,11 +959,11 @@ const MODELS = {
       ['Build the sleeping box','Install the divider with its 7″ × 8″ pop hole, then the plywood back, sleeping-box end and original flat plywood top.'],
       ['Attach hardware cloth','Cover the run end and run door with ½″ galvanized hardware cloth, pulled tight and fastened every 2–3″.'],
       ['Build the low roof frame','Set four short risers on the top frame, add continuous front and back bearing beams, then three front-to-back rafters and three flat 1×4 purlins.'],
-      ['Install the steel roof','Add foam closure strips and screw down the corrugated steel panels at the 3-in-12 pitch, overlapping one corrugation and following the panel manufacturer’s fastener pattern.'],
+      ['Install the protected steel roof','Round and sand the four fascia boards, then fasten them so they project beyond the panel perimeter. Add foam closure strips and screw down the corrugated steel panels at the 3-in-12 pitch. Finish every edge with hemmed metal trim and each corner with a secured EPDM cap. Reach under the full perimeter and confirm that no screw point or raw metal edge is exposed.'],
       ['Hang the doors and place the coop','Build and hang the same mesh run door and plywood sleeping-box door as the porch model. Add hinges, padlockable latches, locking carabiners and carry handles, then set the legs on level pavers.']],
-    cutNotes:[[/^Roof rafter/,'Both ends cut parallel to the 3-in-12 pitch'],[/^Roof riser/,'Cut to fit; front and back lengths differ'],[/^Roof purlin/,'Install flat across all three rafters'],
+    cutNotes:[[/^Roof rafter/,'Both ends cut parallel to the 3-in-12 pitch'],[/^Roof riser/,'Cut to fit; front and back lengths differ'],[/^Roof purlin/,'Install flat across all three rafters'],[/child-protection fascia/,'Round every exposed corner generously and sand all faces splinter-free before sealing'],
       [/divider/,'7″ × 8″ pop hole at the bottom, toward the back'],[/door diagonal/,'Angled ends: mark off the door frame'],[/diagonal brace/,'Angled ends: mark off the frame'],[/floor joist|floor ledger/,'Top ½″ below the rail tops']],
-    stepRules:[[/^Roof riser|^Roof bearing|^Roof rafter|^Roof purlin/,5],[/^Low corrugated/,6],[/hinge|latch|carabiner|knuckle|Carry handle/i,7],[/door/i,7],[/^Run side hardware cloth/,4],[/^Sleeping box|^Back wall|^End wall|^Top \(plywood\)/,3],[/floor \(|ledger/,2],[/brace|\(sides\)|joist|Top cross rail/,1],[/./,0]]
+    stepRules:[[/^Roof riser|^Roof bearing|^Roof rafter|^Roof purlin/,5],[/^Low corrugated|roof-edge|child-protection|corner cap/i,6],[/hinge|latch|carabiner|knuckle|Carry handle/i,7],[/door/i,7],[/^Run side hardware cloth/,4],[/^Sleeping box|^Back wall|^End wall|^Top \(plywood\)/,3],[/floor \(|ledger/,2],[/brace|\(sides\)|joist|Top cross rail/,1],[/./,0]]
   }
 };
 
@@ -1064,7 +1090,7 @@ function renderLayers(){
   const on = all.every(k=>ls[k]===(k==='framing'));
   el.innerHTML=`<label class="toggle"><input type="checkbox" id="framingOnly" ${on?'checked':''}><span class="track"></span>Framing only</label>`;
   el.querySelector('input').addEventListener('change',e=>{ all.forEach(k=>ls[k]= e.target.checked ? k==='framing' : true); renderLayers(); applyLayers(); });
-  const colors={framing:'--sw-framing',floors:'--sw-floors',sheathing:'--sw-sheathing',mesh:'--sw-mesh',liner:'--accent',roofdeck:'--sw-roofdeck',roofing:'--sw-roofing',doors:'--sw-doors',fixtures:'--ok',birds:'--sw-ramp',hardware:'--sw-hardware',ramp:'--sw-ramp'};
+  const colors={framing:'--sw-framing',floors:'--sw-floors',sheathing:'--sw-sheathing',mesh:'--sw-mesh',liner:'--accent',roofdeck:'--sw-roofdeck',roofing:'--sw-roofing',roofedge:'--sw-hardware',doors:'--sw-doors',fixtures:'--ok',birds:'--sw-ramp',hardware:'--sw-hardware',ramp:'--sw-ramp'};
   $('#layerChips').innerHTML='<span class="lbl">Layers</span>'+m.layers.map(([k,l])=>`<button type="button" class="chip${ls[k]?'':' off'}" data-layer="${k}" aria-pressed="${!!ls[k]}"><span class="sw" style="--c:var(${colors[k]||'--accent'})"></span>${l}</button>`).join('');
 }
 $('#layerChips').addEventListener('click',e=>{ const b=e.target.closest('button[data-layer]'); if(!b) return; const k=b.dataset.layer; M().layerState[k]=!M().layerState[k]; renderLayers(); applyLayers(); });
@@ -1129,6 +1155,8 @@ const PRICE={
   'hw:Gate latch, 4″ with padlock hole':[6.48,'https://www.lowes.com/pd/national-hardware-steel-painted-gate-latch/50414134','store',1,'National Hardware N184-861, black. Check the carabiner fits through its hole.'],
   'hw:Locking carabiner':[6.79,'https://a.co/d/0eqSNeen','amazon',6,'Amazon 6-pack. One pack covers every latch, with spares.'],
   'hw:Soft bird netting, 4 × 4 ft':[14.98,LS('soft bird netting 4 x 4 ft'),'',1,'Use taut bird netting or shade cloth with no loose loops; verify openings cannot catch feet or heads.'],
+  'hw:Hemmed metal roof-edge trim, 18 ft':[39.98,LS('hemmed metal roof edge trim'),'',1,'Estimated allowance for folded edge trim around the full roof perimeter; confirm the profile fits the corrugated panel.'],
+  'hw:Rounded EPDM roof corner cap':[15.98,LS('outdoor rubber corner guard UV resistant'),'',4,'Four-pack estimate. Use mechanically secured, UV-resistant caps sized to the finished hemmed corners; adhesive alone is not sufficient.'],
   'x:staples':[8.98,'https://www.lowes.com/pd/Fas-n-Tite-3-4-in-Leg-x-3-16-in-Round-Crown-14-Gauge-Fence-Staples-1-lb/1000435467','store',1,'Fas-n-Tite round-crown fence staples, about 1 lb. Hammer them in; no staple gun needed.'],
   'hw:Pull handle, 6½″ black utility (carry handle)':[4.98,'https://www.lowes.com/pd/ReliaBilt-ReliaBilt-6-1-2-in-Black-Utility-Pull-Handle-1-Pack/5002385973','store',1,'RELIABILT screen/storm door pull. Its included screws are too short for carrying weight: bolt it through into the floor framing with ¼″ bolts instead.']
 };
